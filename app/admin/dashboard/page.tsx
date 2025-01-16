@@ -39,12 +39,22 @@ const AdminDashboard: React.FC = () => {
     phoneNumber: '',
   })
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
-  const [newMember, setNewMember] = useState<Omit<Member, 'id' | 'contributions'>>({
+  const [newMember, setNewMember] = useState<Omit<Member, 'id'>>({
     name: '',
     idNumber: '',
     transactionCode: '',
     paymentMode: 'Account Number',
-  })
+    contributions: [],
+  });
+  
+  /*const [newMember, setNewMember] = useState<Omit<Member, 'id' | 'contributions'>>({
+    name: '',
+    idNumber: '',
+    transactionCode: '',
+    paymentMode: 'Account Number',
+  })*/
+
+
   const [calculatorAmount, setCalculatorAmount] = useState('')
   const [newContribution, setNewContribution] = useState<Omit<Contribution, 'id'>>({ amount: 0, date: '' })
   const router = useRouter()
@@ -134,6 +144,31 @@ const AdminDashboard: React.FC = () => {
   const handleAddMember = async () => {
     if (selectedGroup) {
       try {
+        const addedMember = await addMember(selectedGroup.id, newMember);
+        const updatedGroup = {
+          ...selectedGroup,
+          members: [...selectedGroup.members, addedMember],
+        };
+        setSelectedGroup(updatedGroup);
+        await loadGroups(userId!);
+        setNewMember({
+          name: '',
+          idNumber: '',
+          transactionCode: '',
+          paymentMode: 'Account Number',
+          contributions: [], // Reset contributions here
+        });
+      } catch (error) {
+        console.error('Error adding member:', error);
+        setError('Failed to add member. Please try again.');
+      }
+    }
+  }
+  
+  /*
+  const handleAddMember = async () => {
+    if (selectedGroup) {
+      try {
         const addedMember = await addMember(selectedGroup.id, newMember)
         const updatedGroup = {
           ...selectedGroup,
@@ -148,7 +183,7 @@ const AdminDashboard: React.FC = () => {
       }
     }
   }
-
+*/
   const handleAddContribution = async (memberId: string) => {
     if (selectedGroup && newContribution.amount && newContribution.date) {
       try {
@@ -200,7 +235,7 @@ const AdminDashboard: React.FC = () => {
       member.paymentMode,
       member.contributions.reduce((total, contrib) => total + contrib.amount, 0).toFixed(2),
     ])
-    doc.autoTable({
+    doc.autotable({
       head: [['Name', 'ID Number', 'Transaction Code', 'Payment Mode', 'Total Contribution']],
       body: tableData,
       startY: 20,
